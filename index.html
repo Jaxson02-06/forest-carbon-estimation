@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="林木碳汇测算系统 - 高效、精准的林业碳汇计量与分析平台">
+  <meta name="keywords" content="林木碳汇,碳汇测算,碳储量,林业,森林碳汇">
+  <title>林木碳汇测算系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌲</text></svg>">
+  <!-- Leaflet GeoTIFF 插件 -->
+  <script src="https://unpkg.com/leaflet-geotiff@1.1.0/dist/leaflet-geotiff.js"></script>
+  <script src="https://unpkg.com/leaflet-geotiff-rgb@1.1.0/dist/leaflet-geotiff-rgb.js"></script>
+  <script src="https://unpkg.com/leaflet-geotiff-plotty@1.1.0/dist/leaflet-geotiff-plotty.js"></script>
+</head>
+<body>
+  <!-- 欢迎页面 -->
+  <div id="welcomePage" class="center-screen">
+    <div class="bg-pattern"></div>
+    <h1>林木<span>碳汇</span>测算系统</h1>
+    <p class="welcome-subtitle">高效、精准的林业碳汇计量与分析平台</p>
+    
+    <div class="login-container">
+      <div class="login-header">
+        <h2>欢迎使用</h2>
+        <p>请登录或注册以继续使用系统功能</p>
+      </div>
+      
+      <div class="button-group">
+        <button class="btn-primary" onclick="showDialog('loginDialog')" aria-label="登录系统">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+          登录系统
+        </button>
+        <button class="btn-secondary" onclick="showDialog('registerDialog')" aria-label="注册账号">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+          注册账号
+        </button>
+        <button class="btn-outline" onclick="guestLogin()" aria-label="游客访问">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19c0-1.657 2.239-3 5-3s5 1.343 5 3v1.662"></path></svg>
+          游客访问
+        </button>
+      </div>
+      
+      <div class="login-footer">
+        <p>测算与分析林业碳汇的专业工具</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 登录对话框 -->
+  <dialog id="loginDialog" class="modal-dialog">
+    <article>
+      <header>
+        <h3>用户登录</h3>
+      </header>
+      <form id="loginForm" method="dialog">
+        <div class="form-group">
+          <label for="loginUsername">用户名</label>
+          <input type="text" id="loginUsername" placeholder="请输入用户名" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required autocomplete="current-password">
+        </div>
+        <footer>
+          <button type="button" class="btn-secondary" id="loginCancelBtn">取消</button>
+          <button type="submit" class="btn-primary">登录</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- 注册对话框 -->
+  <dialog id="registerDialog" class="modal-dialog">
+    <article>
+      <header>
+        <h3>用户注册</h3>
+      </header>
+      <form id="registerForm" method="dialog">
+        <div class="form-group">
+          <label for="regUsername">用户名</label>
+          <input type="text" id="regUsername" placeholder="请设置用户名" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="regPassword">密码</label>
+          <input type="password" id="regPassword" placeholder="请设置密码" required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label for="regConfirmPassword">确认密码</label>
+          <input type="password" id="regConfirmPassword" placeholder="请再次输入密码" required autocomplete="new-password">
+        </div>
+        <footer>
+          <button type="button" class="btn-secondary" id="registerCancelBtn">取消</button>
+          <button type="submit" class="btn-primary">注册</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- 主内容区 -->
+  <main id="mainContent" class="hidden">
+    <!-- 导航栏 -->
+    <nav>
+      <div class="brand">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"></path><path d="M9 18.12 3 14v6"></path><path d="M13 9.68 21 14v-6"></path><path d="M9 18.12A5 5 0 0 1 13.19 14H21"></path><path d="M17 14a5 5 0 0 0-4.81-4.12L3 14"></path></svg>
+        林木碳汇测算系统
+      </div>
+      <div class="spacer"></div>
+      <div id="userInfo">未登录</div>
+      <button id="logoutBtn" class="btn-logout hidden" aria-label="退出登录">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        退出
+      </button>
+    </nav>
+
+    <div class="app-layout">
+      <!-- 左侧边栏 -->
+      <aside class="sidebar">
+        <div class="sidebar-content">
+          <!-- 分析参数设置 -->
+          <div class="sidebar-section parameter-section">
+          <h5>分析参数设置</h5>
+          <form class="compact-form">
+              <!-- 1. 数据预处理参数 -->
+              <div class="form-group collapsible" id="section-preprocessing">
+                <div class="section-header" onclick="toggleSection(this)">
+                  <label><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10"/></svg> 1. 数据准备与预处理</label>
+                  <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                  <!-- 上传LiDAR数据 -->
+                  <div class="form-group">
+                    <label for="lidarUpload">上传LiDAR点云数据</label>
+                    <div class="upload-container">
+                      <input type="file" id="lidarUpload" class="form-control-file" accept=".las,.laz">
+                      <button id="uploadLidarBtn" class="btn-sm btn-primary">上传</button>
+                    </div>
+                    <small class="form-text text-muted">请选择LiDAR点云文件（LAS/LAZ格式）</small>
+                  </div>
+
+                  <!-- 1.1 地面/非地面滤波阈值 -->
+                  <div class="form-group">
+                    <label for="groundFilterThreshold">地面/非地面滤波阈值 (m)</label>
+                    <div class="range-with-value">
+                      <input type="range" id="groundFilterThreshold" min="0.5" max="2" step="0.1" value="1.0" aria-valuemin="0.5" aria-valuemax="2" aria-valuenow="1.0">
+                      <span id="groundFilterThresholdValue">1.0</span>
+                    </div>
+                    <small class="form-text text-muted">设置点高阈值以区分地面与植被点，用于DEM生成</small>
+                  </div>
+                  
+                  <!-- 1.2 网格分辨率 -->
+            <div class="form-group">
+                    <label for="gridResolution">网格分辨率 (DEM/DSM/CHM) (m)</label>
+                    <select id="gridResolution" class="form-select">
+                      <option value="0.5">0.5 m</option>
+                      <option value="1" selected>1.0 m</option>
+                      <option value="2">2.0 m</option>
+                      <option value="5">5.0 m</option>
+              </select>
+                    <small class="form-text text-muted">指定插值网格大小，平衡精度与计算量</small>
+            </div>
+            
+                  <!-- 1.3 CHM平滑半径 -->
+            <div class="form-group">
+                    <label for="chmSmoothRadius">CHM平滑半径 (pixels)</label>
+              <div class="range-with-value">
+                      <input type="range" id="chmSmoothRadius" min="1" max="5" step="1" value="2" aria-valuemin="1" aria-valuemax="5" aria-valuenow="2">
+                      <span id="chmSmoothRadiusValue">2</span>
+                    </div>
+                    <small class="form-text text-muted">控制形态学开闭运算的结构元素半径，减少噪声</small>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 添加到数据预处理部分 -->
+              <!-- 在原有的LiDAR处理界面之后添加 -->
+
+              <div class="preprocessing-container">
+                <h5>多光谱影像正射校正与配准</h5>
+                
+                <form id="multispectralForm" class="form-container">
+                  <div class="form-group mb-3">
+                    <label for="multispectralFiles">选择多光谱影像文件 (GeoTIFF格式)</label>
+                    <input type="file" class="form-control" id="multispectralFiles" name="multispectralFiles" multiple accept=".tif,.tiff">
+                    <small class="form-text text-muted">可以同时选择多个影像文件</small>
+                  </div>
+                  
+                  <div class="form-group mb-3">
+                    <label for="demFile">选择数字高程模型 (DEM) 用于正射校正</label>
+                    <input type="file" class="form-control" id="demFile" name="demFile" accept=".tif,.tiff">
+                    <input type="hidden" id="demPath" value="">
+                  </div>
+                  
+                  <div class="form-group mb-3">
+                    <label for="chmFile">选择冠层高度模型 (CHM) 用于影像配准</label>
+                    <input type="file" class="form-control" id="chmFile" name="chmFile" accept=".tif,.tiff">
+                    <input type="hidden" id="chmPath" value="">
+                  </div>
+                  
+                  <div class="processing-options">
+                    <h6>处理参数</h6>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group mb-3">
+                          <label for="resolution">正射影像分辨率 (米/像素)</label>
+                          <input type="range" class="form-range" id="resolution" min="0.1" max="10" step="0.1" value="1">
+                          <div class="d-flex justify-content-between">
+                            <span>0.1</span>
+                            <span id="resolutionValue">1</span>
+                            <span>10</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-6">
+                        <div class="form-group mb-3">
+                          <label for="matchQuality">匹配点质量阈值</label>
+                          <input type="range" class="form-range" id="matchQuality" min="0.5" max="0.9" step="0.05" value="0.75">
+                          <div class="d-flex justify-content-between">
+                            <span>0.5</span>
+                            <span id="matchQualityValue">0.75</span>
+                            <span>0.9</span>
+                        </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">上传文件</button>
+                    <button type="button" id="startProcessingBtn" class="btn btn-success" disabled>开始处理</button>
+                  </div>
+                </form>
+                  
+                <!-- 处理状态和进度显示 -->
+                <div id="processingStatus" class="hidden">
+                  <h6>多光谱数据处理状态</h6>
+                  <div class="progress">
+                    <div id="processingProgressBar" class="progress-bar" role="progressbar" style="width: 0%" 
+                         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                  <p id="processingStatusText">准备处理...</p>
+                  <button id="cancelProcessingBtn" class="btn-sm btn-secondary">取消处理</button>
+                </div>
+              
+                <!-- 处理结果显示 -->
+                <div id="resultPanel" class="hidden">
+                  <h6>处理结果</h6>
+                  
+                  <!-- 下载链接 -->
+                  <div class="result-links mb-3">
+                    <div class="d-flex gap-2 flex-wrap">
+                      <a id="orthoDownloadLink" href="#" download class="btn-sm btn-primary">下载正射影像</a>
+                      <a id="registeredDownloadLink" href="#" download class="btn-sm btn-primary">下载自动配准影像</a>
+                      <a id="finalDownloadLink" href="#" download class="btn-sm btn-primary hidden">下载最终调整影像</a>
+                    </div>
+                    </div>
+                  
+                  <!-- 图层控制 -->
+                  <div class="layer-controls mb-3">
+                    <h6>图层调整</h6>
+                    
+                    <div class="opacity-control mb-2">
+                      <label for="opacitySlider">影像透明度</label>
+                      <input type="range" class="form-range" id="opacitySlider" min="0" max="100" value="70">
+                    </div>
+                    
+                    <div class="adjustment-control">
+                      <p>手动配准微调</p>
+                      <div class="d-grid gap-2 mb-2" style="grid-template-columns: 1fr 1fr 1fr;">
+                        <div></div>
+                        <button id="moveUpBtn" class="btn-sm btn-secondary">↑</button>
+                        <div></div>
+                        <button id="moveLeftBtn" class="btn-sm btn-secondary">←</button>
+                        <button id="applyAdjustmentBtn" class="btn-sm btn-primary">应用调整</button>
+                        <button id="moveRightBtn" class="btn-sm btn-secondary">→</button>
+                        <div></div>
+                        <button id="moveDownBtn" class="btn-sm btn-secondary">↓</button>
+                        <div></div>
+                    </div>
+                      <p id="offsetDisplay">当前偏移: X=0, Y=0</p>
+                      <input type="hidden" id="xOffset" value="0">
+                      <input type="hidden" id="yOffset" value="0">
+                    </div>
+                  </div>
+                  
+                  <!-- 地图显示 -->
+                  <div id="multispectralMap"></div>
+                  
+                </div>
+              </div>
+              
+              <!-- 单株分割与树冠提取模块 -->
+              <div class="form-group collapsible" id="section-tree-detection">
+                <div class="section-header" onclick="toggleSection(this)">
+                  <label><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18V9"/><path d="M13 14v4"/><path d="M13 8V2"/><path d="M9 22V18"/><path d="M17 18v4"/><path d="M14 4h6"/><path d="M4 8h10"/><path d="M4 12h5"/><path d="M4 16h5"/><path d="M4 20h9"/></svg> 2. 单株树冠提取</label>
+                  <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                  <!-- 单株分割与树冠提取表单 -->
+                  <form id="treeDetectionForm" class="compact-form">
+                  <div class="form-group">
+                      <label for="chmFileInput">选择冠层高度模型 (CHM) 文件</label>
+                      <div class="upload-container">
+                        <input type="file" id="chmFileInput" class="form-control-file" accept=".tif,.tiff,.geotiff">
+                        <button type="submit" class="btn-sm btn-primary">上传</button>
+                  </div>
+                      <small class="form-text text-muted">请选择GeoTIFF格式的CHM文件，该文件通常由LiDAR处理流程生成</small>
+            </div>
+            
+                    <!-- 处理参数配置 -->
+            <div class="form-group">
+                      <label>树冠检测参数</label>
+                      <div class="parameter-grid">
+                        <div class="parameter-item">
+                    <label for="minTreeHeight">最小树高阈值 (m)</label>
+              <div class="range-with-value">
+                            <input type="range" id="minTreeHeight" min="0.5" max="10" step="0.5" value="2.0" aria-valuemin="0.5" aria-valuemax="10" aria-valuenow="2.0">
+                      <span id="minTreeHeightValue">2.0</span>
+                    </div>
+                          <small class="form-text text-muted">低于此高度的区域不会被识别为树</small>
+                        </div>
+                        
+                        <div class="parameter-item">
+                          <label for="smoothSigma">平滑参数 (sigma)</label>
+                          <div class="range-with-value">
+                            <input type="range" id="smoothSigma" min="0" max="3" step="0.1" value="1.0" aria-valuemin="0" aria-valuemax="3" aria-valuenow="1.0">
+                            <span id="smoothSigmaValue">1.0</span>
+                          </div>
+                          <small class="form-text text-muted">控制高斯平滑程度，较大值对应更强的平滑效果</small>
+                        </div>
+                        
+                        <div class="parameter-item">
+                          <label for="minTreeDistance">最小树顶间距 (像素)</label>
+                          <div class="range-with-value">
+                            <input type="range" id="minTreeDistance" min="1" max="20" step="1" value="5" aria-valuemin="1" aria-valuemax="20" aria-valuenow="5">
+                            <span id="minTreeDistanceValue">5</span>
+                  </div>
+                          <small class="form-text text-muted">控制树顶检测的最小距离，较大值可减少过度识别</small>
+                </div>
+              </div>
+              
+                      <div class="processing-actions">
+                        <button type="button" id="startTreeDetectionBtn" class="btn-sm btn-success" disabled>开始处理</button>
+                        <button type="button" id="applyTreeDetectionParamsBtn" class="btn-sm btn-primary">应用参数</button>
+                        <button type="button" id="cancelTreeDetectionBtn" class="btn-sm btn-secondary">取消处理</button>
+                </div>
+                    </div>
+                    
+                    <!-- 处理状态 -->
+                    <div id="treeDetectionStatus" class="hidden">
+                      <h6>树冠检测处理状态</h6>
+                      <div class="progress">
+                        <div id="treeDetectionProgressBar" class="progress-bar" role="progressbar" style="width: 0%" 
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                      <p id="treeDetectionStatusText">准备处理...</p>
+                    </div>
+                    
+                    <!-- 结果面板 -->
+                    <div id="treeDetectionResultPanel" class="hidden">
+                      <h6>树冠检测结果</h6>
+                      
+                      <!-- 结果统计 -->
+                      <div class="result-stats">
+                        <div class="stat-item">
+                          <span class="stat-label">检测到树木数量:</span>
+                          <span id="treeCountValue" class="stat-value">0</span>
+              </div>
+            </div>
+
+                      <!-- 下载选项 -->
+                      <div class="result-links">
+                        <a id="downloadTreesGeojsonBtn" href="#" download class="btn-sm btn-primary disabled">下载GeoJSON</a>
+                        <a id="downloadTreesImageBtn" href="#" download class="btn-sm btn-primary disabled">下载可视化图像</a>
+                  </div>
+                  
+                      <!-- 可视化图像 -->
+                      <div id="treeVisualizationContainer" class="visualization-container"></div>
+                      
+                      <!-- 地图容器 -->
+                      <div id="treeDetectionMap"></div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              
+              <!-- 单株属性提取与碳储量估算模块 -->
+              <div class="form-group collapsible" id="section-carbon-estimation">
+                <div class="section-header" onclick="toggleSection(this)">
+                  <label><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 7V2"/><path d="M15 7V2"/><path d="M12 7V2"/><path d="M3 22h18"/><path d="M3 17h18"/><rect x="3" y="7" width="18" height="10" rx="1"/></svg> 3. 单株属性提取与碳储量估算</label>
+                  <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                  <!-- 单株属性提取与碳储量估算表单 -->
+                  <form id="carbonEstimationForm" class="compact-form">
+                  <div class="form-group">
+                      <label for="demFileInput">选择数字高程模型 (DEM) 文件 (可选)</label>
+                      <div class="upload-container">
+                        <input type="file" id="demFileInput" class="form-control-file" accept=".tif,.tiff,.geotiff">
+                        <small id="demUploadStatus" class="form-text">未上传DEM文件</small>
+                      </div>
+                      <small class="form-text text-muted">DEM将用于更精确的树高计算，无DEM时使用CHM中的高度值</small>
+                    </div>
+                    
+                    <!-- 生物量模型参数配置 -->
+                    <div class="form-group">
+                      <label>生物量模型参数</label>
+                      <div class="parameter-grid">
+                        <div class="parameter-item">
+                          <label for="modelParamA">系数 a</label>
+                          <div class="range-with-value">
+                            <input type="range" id="modelParamA" min="0.01" max="0.5" step="0.01" value="0.05" aria-valuemin="0.01" aria-valuemax="0.5" aria-valuenow="0.05">
+                            <span id="modelParamAValue">0.05</span>
+                          </div>
+                          <small class="form-text text-muted">生物量模型系数: M = a * DBH^b * H^c</small>
+                        </div>
+                        
+                        <div class="parameter-item">
+                          <label for="modelParamB">胸径指数 b</label>
+                          <div class="range-with-value">
+                            <input type="range" id="modelParamB" min="1" max="3" step="0.1" value="2.0" aria-valuemin="1" aria-valuemax="3" aria-valuenow="2.0">
+                            <span id="modelParamBValue">2.0</span>
+                          </div>
+                          <small class="form-text text-muted">胸径指数，典型值为1.5-2.5</small>
+                        </div>
+                        
+                        <div class="parameter-item">
+                          <label for="modelParamC">树高指数 c</label>
+                          <div class="range-with-value">
+                            <input type="range" id="modelParamC" min="0.5" max="1.5" step="0.1" value="1.0" aria-valuemin="0.5" aria-valuemax="1.5" aria-valuenow="1.0">
+                            <span id="modelParamCValue">1.0</span>
+                          </div>
+                          <small class="form-text text-muted">树高指数，典型值为0.5-1.0</small>
+                  </div>
+                  
+                        <div class="parameter-item">
+                          <label for="carbonFactor">碳转换因子</label>
+                          <div class="range-with-value">
+                            <input type="range" id="carbonFactor" min="0.45" max="0.55" step="0.01" value="0.5" aria-valuemin="0.45" aria-valuemax="0.55" aria-valuenow="0.5">
+                            <span id="carbonFactorValue">0.5</span>
+                          </div>
+                          <small class="form-text text-muted">生物量到碳的转换系数, IPCC默认为0.47</small>
+                        </div>
+                      </div>
+                      
+                      <div class="processing-actions">
+                        <button type="button" id="startCarbonEstimationBtn" class="btn-sm btn-success">开始计算</button>
+                        <button type="button" id="applyModelParamsBtn" class="btn-sm btn-primary">应用参数</button>
+                      </div>
+                    </div>
+                    
+                    <!-- 处理状态 -->
+                    <div id="carbonEstimationStatus" class="hidden">
+                      <h6>碳储量估算处理状态</h6>
+                      <div class="progress">
+                        <div id="carbonEstimationProgressBar" class="progress-bar" role="progressbar" style="width: 0%" 
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                      <p id="carbonEstimationStatusText">准备处理...</p>
+                    </div>
+                    
+                    <!-- 结果面板 -->
+                    <div id="carbonEstimationResultPanel" class="hidden">
+                      <h6>碳储量估算结果</h6>
+                      
+                      <!-- 总碳储量统计 -->
+                      <div class="result-stats">
+                        <div class="stats-group">
+                          <h6>总体统计</h6>
+                          <div class="stats-grid">
+                            <div class="stat-item">
+                              <span class="stat-label">树木总数:</span>
+                              <span id="totalTreesValue" class="stat-value">0</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">总碳储量:</span>
+                              <span id="totalCarbonValue" class="stat-value">0 吨</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">CO2当量:</span>
+                              <span id="totalCo2eValue" class="stat-value">0 吨CO2e</span>
+                  </div>
+                </div>
+              </div>
+
+                        <div class="stats-group">
+                          <h6>密度统计</h6>
+                          <div class="stats-grid">
+                            <div class="stat-item">
+                              <span class="stat-label">碳密度:</span>
+                              <span id="carbonDensityValue" class="stat-value">0 tC/ha</span>
+                </div>
+                            <div class="stat-item">
+                              <span class="stat-label">CO2e密度:</span>
+                              <span id="co2eDensityValue" class="stat-value">0 tCO2e/ha</span>
+                    </div>
+                            <div class="stat-item">
+                              <span class="stat-label">总面积:</span>
+                              <span id="totalAreaValue" class="stat-value">0 ha</span>
+                  </div>
+                </div>
+            </div>
+            
+                        <div class="stats-group">
+                          <h6>平均值统计</h6>
+                          <div class="stats-grid">
+                            <div class="stat-item">
+                              <span class="stat-label">平均树高:</span>
+                              <span id="meanHeightValue" class="stat-value">0 m</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">平均胸径:</span>
+                              <span id="meanDbhValue" class="stat-value">0 cm</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">平均碳储量:</span>
+                              <span id="meanCarbonValue" class="stat-value">0 kg</span>
+                            </div>
+                </div>
+                    </div>
+            </div>
+
+                      <!-- 下载选项 -->
+                      <div class="result-links">
+                        <a id="downloadTreeAttributesBtn" href="#" download class="btn-sm btn-primary disabled">下载树木属性CSV</a>
+                    </div>
+                    </div>
+                  </form>
+                </div>
+            </div>
+          </form>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 主视图区域 -->
+      <div class="main-view">
+        <!-- 上部区域: 数据输入 和 核心结果 -->
+        <div class="main-view-top-section">
+          <!-- 核心结果区 (从下方卡片中移动过来) -->
+          <div class="main-summary-section card">
+            <h5>核心分析结果</h5>
+            <div class="card-content">
+              <div class="analysis-results summary-results">
+                <!-- 碳汇量指标 -->
+                <div class="data-grid-header">
+                  <h6>碳汇量指标</h6>
+                </div>
+                <div class="data-grid summary-grid">
+                  <div>
+                    <h6>地上碳汇量</h6>
+                    <p id="abovegroundCarbon">-</p>
+                    <small>吨CO₂当量</small>
+                  </div>
+                  <div>
+                    <h6>地下碳汇量</h6>
+                    <p id="belowgroundCarbon">-</p>
+                    <small>吨CO₂当量</small>
+                  </div>
+                  <div>
+                    <h6>总碳汇量</h6>
+                    <p id="totalCarbon">-</p>
+                    <small>吨CO₂当量</small>
+                  </div>
+                </div>
+                
+                <!-- 区域统计信息 -->
+                <div class="data-grid-header secondary-header">
+                  <h6>区域统计信息</h6>
+                </div>
+                <div class="data-grid summary-grid secondary-grid">
+                  <div>
+                    <h6>林木总数</h6>
+                    <p id="totalTrees">-</p>
+                    <small>估算株数</small>
+                  </div>
+                  <div>
+                    <h6>平均碳密度</h6>
+                    <p id="carbonDensity">-</p>
+                    <small>tCO₂e/ha</small>
+                  </div>
+                  <div>
+                    <h6>分析区域面积</h6>
+                    <p id="totalArea">-</p>
+                    <small>公顷(ha)</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 下部区域: 标签页视图 (地图、图表、详情) -->
+        <div class="card main-view-bottom-section">
+          <!-- 标签页导航 -->
+          <div class="tabs" role="tablist">
+            <button class="tab-btn active" data-tab="mapTab" role="tab" aria-selected="true" aria-controls="mapTab">地图视图</button>
+            <button class="tab-btn" data-tab="chartTab" role="tab" aria-selected="false" aria-controls="chartTab">图表分析</button>
+            <button class="tab-btn" data-tab="detailsTab" role="tab" aria-selected="false" aria-controls="detailsTab">区域详情</button>
+          </div>
+          
+          <!-- 标签页内容 -->
+          <div class="tab-content">
+            <!-- 地图 -->
+            <div id="mapTab" class="tab-pane active" role="tabpanel" aria-labelledby="mapTab">
+              <div id="mapContainer" aria-label="地图容器"></div>
+            </div>
+            <!-- 图表 -->
+            <div id="chartTab" class="tab-pane" role="tabpanel" aria-labelledby="chartTab">
+              <div id="chartContainer" aria-label="图表容器"></div>
+            </div>
+            <!-- 区域详情 -->
+            <div id="detailsTab" class="tab-pane" role="tabpanel" aria-labelledby="detailsTab">
+              <div class="analysis-results region-details-list">
+              <div class="data-grid-header">
+                <h6>已选择区域</h6>
+                <small id="regionCount">0个区域</small>
+              </div>
+              <div class="regions-list" id="regionsList" aria-label="区域列表" role="list">
+                <!-- 动态生成的区域卡片将在这里显示 -->
+              </div>
+                <div class="button-row results-actions">
+                <button type="button" id="exportBtn" class="btn-primary" aria-label="导出数据">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  导出数据
+                </button>
+                <button type="button" id="btnClearAll" class="btn-secondary" aria-label="清除所有区域">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  清除所有
+                </button>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 通知消息 -->
+  <div id="notification" class="notification hidden">
+    <div class="notification-content">
+      <span id="notificationMessage"></span>
+      <button class="close-notification" aria-label="关闭通知">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 加载指示器 -->
+  <div id="loadingIndicator" class="loading-indicator hidden">
+    <div class="spinner"></div>
+    <p>正在处理，请稍候...</p>
+  </div>
+
+  <!-- 脚本引用 -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/rasterLayers.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/multispectral.js"></script>
+  <script src="js/treeDetection.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/lidar.js"></script>
+  <script src="js/carbonEstimation.js"></script>
+
+  <!-- 添加到 body 结束标签前，在其他脚本之前 -->
+  <!-- Leaflet 地图库 -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        integrity="sha512-Rlm0re0VlRFYorDtJz8B67WZrZ99XTDnYzrYObvTpD4BrOmSPVJ8pU2U9QNrMkCZH4ZXmUBxXb1gn0UKZMW/w==" 
+        crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+          integrity="sha512-jaHpXmoNlXK0ZYUjI+RNe/8IWYWZ9+CiW7PUyFCCk9LozP+FJyy3OWbqAnfQRITc7jftJCqGUjpWKQ+9o9Zlw==" 
+          crossorigin=""></script>
+  
+  <!-- Leaflet Side-by-Side 插件 -->
+  <script src="https://unpkg.com/leaflet-side-by-side@2.0.0/leaflet-side-by-side.min.js"></script>
+  
+  <!-- 项目脚本 -->
+  <script src="js/main.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/rasterLayers.js"></script>
+  <script src="js/multispectral.js"></script>
+  <script src="js/lidar.js"></script>
+  <script src="js/chart.js"></script>
+</body>
+</html> 
